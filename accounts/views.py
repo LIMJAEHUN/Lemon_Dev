@@ -178,7 +178,6 @@ def addlist(request):
 
 def myinfo(request):
     return render(request, 'myinfo.html')
-
 def signup(request):
     if request.method == 'POST':
         if request.POST['password'] == request.POST['password1']:
@@ -189,7 +188,7 @@ def signup(request):
                                             name=request.POST['name'],
                                             phonenumber=request.POST['phonenumber'],
                                             invest=request.POST['invest'],
-                                            
+
                                             u_chk=request.POST['u_chk'],
                                             e_chk=request.POST['e_chk'],
 
