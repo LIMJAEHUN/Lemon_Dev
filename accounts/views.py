@@ -7,6 +7,7 @@ from django.contrib.auth import login, authenticate, get_user_model
 from django.contrib.auth.models import User
 from .models import user,AccountBook,Income,Spend
 from .forms import LemonSignupForm, SpendForm, IncomeForm
+# from .socialviews import KakaoSignInCallbackView, KakaoSignInView
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 # Create your views here.
@@ -18,6 +19,7 @@ from django.views.generic import View
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+
 #from .serializers import LemonUserSerializers
 
 # @api_view(['GET'])
@@ -29,7 +31,7 @@ from rest_framework.decorators import api_view
 #     serializer_class = LemonUserSerializer
 
 # class ReactAppView(View):
-    
+
 #     def get(self, request):
 #         try:
 #             with open(os.path.join(str(settings.ROOT_DIR),
@@ -49,17 +51,17 @@ def home(request):
     return render(request, 'main.html')
 
 def calendar(request):
-    user = request.user.user_id
-    events = AccountBook.objects.filter(user_id=user )
-    income = Income.objects.filter(user_id=user)
-    spend = Spend.objects.filter(user_id=user)
-    events = Income.objects.all().values("amount", "income_date" ,"kind").union(Spend.objects.all().values("amount","spend_date", "kind"))
-    total = AccountBook.objects.all().values_list("account_date").union()
-    
+    # user = request.user.user_id
+    # events = AccountBook.objects.filter(user_id=user )
+    # income = Income.objects.filter(user_id=user)
+    # spend = Spend.objects.filter(user_id=user)
+    # events = Income.objects.all().values("amount", "income_date" ,"kind").union(Spend.objects.all().values("amount","spend_date", "kind"))
+    # total = AccountBook.objects.all().values_list("account_date").union()
+
     now = datetime.datetime.now()
     year = now.strftime('%Y')
     month = now.strftime('%m')
-    
+
     # 월별 기간 필터링
     spend_month_filter = Spend.objects.filter(spend_date__year=year, spend_date__month=month).values('kind','spend_date','amount','place')
     income_month_filter = Income.objects.filter(income_date__year=year, income_date__month=month).values('kind','income_date','amount','income_way')
@@ -68,7 +70,7 @@ def calendar(request):
     # 일별 수입,지출값 합산
     spend_day_sum2 = spend_month_filter.values('spend_date__day','kind').annotate(amount=Sum('amount')).order_by('-spend_date__day').values('spend_date', 'kind', 'amount')
     income_day_sum2 = income_month_filter.values('income_date__day','kind').annotate(amount=Sum('amount')).order_by('-income_date__day').values('income_date', 'kind', 'amount')
-    
+
     spend_day_sum = spend_month_filter.values('spend_date__day').annotate(amount=Sum('amount')).order_by('-spend_date__day')
     income_day_sum = income_month_filter.values('income_date__day').annotate(amount=Sum('amount')).order_by('-income_date__day')
 
@@ -91,7 +93,7 @@ def calendar(request):
     print('디테일데이 나와라 ->>>'+ str(spend_day_sum))
 
     return render(request, 'calendar.html' ,{'Spend_day':spend_day_sum,'Income_day':income_day_sum,'Detail_month':detail_month,'detail_day':detail_day,
-                'events':events, 'Expenditure': spend_sum, 'Income': income_sum, 'Category': category_amount, 'Method': method_amount, 'Area': area_amount, 'month':month
+                 'Expenditure': spend_sum, 'Income': income_sum, 'Category': category_amount, 'Method': method_amount, 'Area': area_amount, 'month':month
                 ,'spend_day_sum2':spend_day_sum2, 'income_day_sum2':income_day_sum2})
 
 
@@ -111,7 +113,7 @@ def add_calendar(request):
                 memo = sform.cleaned_data['memo']
                 sform.save()
                 return redirect('/calendar')
-                
+
         elif 'incomebtn' in request.POST:
             iform = IncomeForm(request.POST)
             if iform.is_valid():
@@ -128,7 +130,7 @@ def add_calendar(request):
         iform = IncomeForm()
     return render(request, 'add_calendar.html')
 
-@csrf_exempt    
+@csrf_exempt
 def ajax_pushdate(request):
     if request.method == "POST":
         test = request.POST.get("testtest", None)
@@ -159,10 +161,10 @@ def all_events(request):
     for event in all_events:
         out.append({
             'title': event.title,
-            'start': event.start_date,                                                         
-            'end': event.end_date, 
+            'start': event.start_date,
+            'end': event.end_date,
         })
-        
+
     return JsonResponse(out, safe=False)
 
 def search_stock(request):
@@ -176,7 +178,6 @@ def addlist(request):
 
 def myinfo(request):
     return render(request, 'myinfo.html')
-
 def signup(request):
     if request.method == 'POST':
         if request.POST['password'] == request.POST['password1']:
@@ -186,9 +187,12 @@ def signup(request):
                                             email=request.POST['email'],
                                             name=request.POST['name'],
                                             phonenumber=request.POST['phonenumber'],
-                                            money=request.POST['money'],
-                                            fakemoney=request.POST['fakemoney'],
-                                            moneydate=request.POST['moneydate'],)
+                                            invest=request.POST['invest'],
+
+                                            u_chk=request.POST['u_chk'],
+                                            e_chk=request.POST['e_chk'],
+
+                                            )
             auth.login(request, user)
             return redirect('/')
         return render(request, 'signup.html')
