@@ -14,6 +14,7 @@ from datetime import datetime
 import datetime
 from django.db.models import Sum, Count
 import os, json
+
 from django.conf import settings
 from django.views.generic import View
 from rest_framework import viewsets
@@ -22,26 +23,7 @@ from rest_framework.decorators import api_view
 
 #from .serializers import LemonUserSerializers
 
-# @api_view(['GET'])
-# def LemonUserAPI(request):
-#     return Response("LemonUser!")
 
-# class LemonViewSet(viewsets.ModelViewSet):
-#     queryset = user.objects.all()
-#     serializer_class = LemonUserSerializer
-
-# class ReactAppView(View):
-
-#     def get(self, request):
-#         try:
-#             with open(os.path.join(str(settings.ROOT_DIR),
-#                                     'front',
-#                                     'build',
-#                                     'index.html')) as file:
-#                 return HttpResponse(file.read())
-
-#         except:
-#             return HttpResponse(status=501,)
 
 
 def main(request):
@@ -62,6 +44,9 @@ def calendar(request):
     year = now.strftime('%Y')
     month = now.strftime('%m')
 
+
+
+
     # 월별 기간 필터링
     spend_month_filter = Spend.objects.filter(spend_date__year=year, spend_date__month=month).values('kind','spend_date','amount','place')
     income_month_filter = Income.objects.filter(income_date__year=year, income_date__month=month).values('kind','income_date','amount','income_way')
@@ -80,11 +65,18 @@ def calendar(request):
     # 월별 기간 필터링
     spend_month_filter2 = Spend.objects.filter(spend_date__year=year, spend_date__month=month)
     income_month_filter2 = Income.objects.filter(income_date__year=year, income_date__month=month)
+    #카페고리
+
+
+
     # 월 총 수입, 지출
     spend_sum = spend_month_filter2.aggregate(Sum('amount'))
     income_sum = income_month_filter2.aggregate(Sum('amount'))
     # 소비 TOP5 카테고리
     category_amount = spend_month_filter2.values('category').annotate(amount=Sum('amount')).order_by('-amount')[:5]
+    category = spend_month_filter2.values('category').annotate(C=Count('category')).order_by('-category')[:5]
+    C = list(category.values('C'))
+    print('카테고리55나와라 ->>>'+ str(C))
     # 소비 TOP5 카드
     method_amount = spend_month_filter2.values('card').annotate(amount=Sum('amount')).order_by('-amount')[:5]
     # 소비 TOP5 거래처
@@ -92,7 +84,7 @@ def calendar(request):
 
     print('디테일데이 나와라 ->>>'+ str(spend_day_sum))
 
-    return render(request, 'calendar.html' ,{'Spend_day':spend_day_sum,'Income_day':income_day_sum,'Detail_month':detail_month,'detail_day':detail_day,
+    return render(request, 'calendar.html' ,{'Spend_day':spend_day_sum,'Income_day':income_day_sum,'Detail_month':detail_month,'detail_day':detail_day, 'data':C,
                  'Expenditure': spend_sum, 'Income': income_sum, 'Category': category_amount, 'Method': method_amount, 'Area': area_amount, 'month':month
                 ,'spend_day_sum2':spend_day_sum2, 'income_day_sum2':income_day_sum2})
 
@@ -130,17 +122,62 @@ def add_calendar(request):
         iform = IncomeForm()
     return render(request, 'add_calendar.html')
 
+
+    # 월별 기간 필터링
+    spend_month_filter = Spend.objects.filter(spend_date__year=year, spend_date__month=month).values('kind','spend_date','amount','place')
+    income_month_filter = Income.objects.filter(income_date__year=year, income_date__month=month).values('kind','income_date','amount','income_way')
+    # 월별 쿼리셋 합치기
+    detail_month = spend_month_filter.union(income_month_filter).order_by('-spend_date')
+    # 일별 수입,지출값 합산
+
+    detail_day = income_day_sum.union(spend_day_sum)
+
+
+    # 월별 기간 필터링
+    spend_month_filter2 = Spend.objects.filter(spend_date__year=year, spend_date__month=month)
+    income_month_filter2 = Income.objects.filter(income_date__year=year, income_date__month=month)
+    #카페고리
+
+    # 월 총 수입, 지출
+    spend_sum = spend_month_filter2.aggregate(Sum('amount'))
+    income_sum = income_month_filter2.aggregate(Sum('amount'))
+    # 소비 TOP5 카테고리
+    category_amount = spend_month_filter2.values('category').annotate(amount=Sum('amount')).order_by('-amount')[:5]
+    category = spend_month_filter2.values('category').annotate(C=Count('category')).order_by('-category')[:5]
+
+    # 소비 TOP5 카드
+    method_amount = spend_month_filter2.values('card').annotate(amount=Sum('amount')).order_by('-amount')[:5]
+    # 소비 TOP5 거래처
+    area_amount = spend_month_filter2.values('place').annotate(amount=Sum('amount')).order_by('-amount')[:5]
+
+
 @csrf_exempt
 def ajax_pushdate(request):
     if request.method == "POST":
         test = request.POST.get("testtest", None)
-        print(str(test))
-        even = Please.objects.filter(start_date=test)
-        print(str(even))
-        evens = list(even.values('title'))
-        print(str(evens))
-        evens = {'msg1':evens}
+
+        spend = Spend.objects.filter(spend_date=test).values('kind','spend_date','amount','place')
+        income = Income.objects.filter(income_date=test).values('kind','income_date','amount','income_way')
+
+        detail_month = income.union(spend).order_by('kind')
+        # print('카리55나와라 ->>>'+str(detail_month))
+        #
+        #
+        #
+        #
+        # evens = list(spend.values('kind','spend_date','amount','place'))
+        #
+        # even = list(income.values('kind','income_date','amount','income_way'))
+
+        even1 = list(detail_month.values('kind','income_date','amount'))
+
+
+
+
+        evens = {'msg1':even1}
+
         return JsonResponse(evens)
+        return render(request, 'calendar.html' ,{'spend':evens,'income':even})
 
 @csrf_exempt
 def add_event(request):
