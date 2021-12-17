@@ -155,10 +155,8 @@ def add_calendar(request):
 def ajax_pushdate(request):
     if request.method == "POST":
         test = request.POST.get("testtest", None)
-
         spend = Spend.objects.filter(spend_date=test).values('kind','spend_date','amount','place')
         income = Income.objects.filter(income_date=test).values('kind','income_date','amount','income_way')
-
         detail_month = income.union(spend).order_by('kind')
         # print('카리55나와라 ->>>'+str(detail_month))
         #
@@ -170,14 +168,10 @@ def ajax_pushdate(request):
         # even = list(income.values('kind','income_date','amount','income_way'))
 
         even1 = list(detail_month.values('kind','income_date','amount'))
-
-
-
-
         evens = {'msg1':even1}
 
         return JsonResponse(evens)
-        return render(request, 'calendar.html' ,{'spend':evens,'income':even})
+
 
 @csrf_exempt
 def add_event(request):
@@ -225,7 +219,6 @@ def signup(request):
                                             name=request.POST['name'],
                                             phonenumber=request.POST['phonenumber'],
                                             invest=request.POST['invest'],
-
                                             u_chk=request.POST['u_chk'],
                                             e_chk=request.POST['e_chk'],
 
